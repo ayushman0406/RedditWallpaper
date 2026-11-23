@@ -11,7 +11,8 @@ let package = Package(
         .target(name: "WallpaperCore"),
         .testTarget(
             name: "WallpaperCoreTests",
-            dependencies: ["WallpaperCore"]
+            dependencies: ["WallpaperCore"],
+            resources: [.copy("Fixtures")]
         ),
     ],
     swiftLanguageModes: [.v5]
