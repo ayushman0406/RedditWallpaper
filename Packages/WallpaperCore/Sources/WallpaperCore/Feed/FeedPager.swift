@@ -15,7 +15,9 @@ public struct FeedPager: Sendable {
 
     public init() {}
 
-    /// Clears the list for a new collection; returns its generation.
+    /// Clears the list for a new collection; returns its generation. A load
+    /// still in flight belongs to the old generation, so nothing is loading
+    /// until the new collection starts its own.
     @discardableResult
     public mutating func reset() -> Int {
         generation += 1
@@ -23,6 +25,7 @@ public struct FeedPager: Sendable {
         items = []
         errors = []
         isExhausted = false
+        isLoading = false
         return generation
     }
 

@@ -31,12 +31,12 @@ struct LockScreenSettings: View {
                 }
                 HStack {
                     Button("Start Screen Saver Now") { model.lockScreen.startScreenSaver() }
-                    Button("Restore macOS Default", role: .destructive) { model.restoreLockScreen() }
+                    Button("Restore Previous Screen Saver", role: .destructive) { model.restoreLockScreen() }
                 }
             } header: {
                 Text("Live wallpapers (experimental)")
             } footer: {
-                Text("macOS has no official way to do this. The app adds your video to Apple's aerial wallpaper list and makes it the screen saver, after backing up the original settings. A macOS update can break it; Restore puts everything back. The video appears once the screen saver starts, so set “Require password after screen saver begins” to Immediately in System Settings → Lock Screen. A hot corner set to Start Screen Saver makes it one move.")
+                Text("macOS has no official way to do this. The app adds your video to Apple's aerial wallpaper list and makes it the screen saver, after backing up your current one. While this is on, the app keeps the video as your screen saver; turn it off to pick another. A macOS update can break it; Restore puts your previous screen saver back. The video appears once the screen saver starts, so set “Require password after screen saver begins” to Immediately in System Settings → Lock Screen. A hot corner set to Start Screen Saver makes it one move.")
                     .foregroundStyle(.secondary)
             }
 

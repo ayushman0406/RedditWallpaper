@@ -43,8 +43,8 @@ The free key allows 200 requests per hour, which is plenty for one person.
 
 How the experimental mode works: macOS has no official API for this. The app converts the video to HEVC, adds it to Apple's own aerial wallpaper list in `~/Library/Application Support/com.apple.wallpaper/`, makes it the screen saver, and restarts `WallpaperAgent`. The video shows over the lock screen once the screen saver starts. For that, set **Require password after screen saver begins** to **Immediately** in System Settings → Lock Screen; a hot corner set to **Start Screen Saver** makes it a single move.
 
-- The original settings are backed up first, and **Restore macOS Default** puts them back.
-- macOS sometimes resets the choice; the app re-applies it while it runs.
+- Your current screen saver is backed up first, and **Restore Previous Screen Saver** puts it back. If the app never changed it, Restore leaves it alone.
+- macOS sometimes resets the choice; the app re-applies it while it runs. To use a different screen saver, turn the setting off first.
 - A macOS update can break it. macOS 27 already changed this area once.
 - Quit System Settings while turning it on, because System Settings rewrites these files.
 

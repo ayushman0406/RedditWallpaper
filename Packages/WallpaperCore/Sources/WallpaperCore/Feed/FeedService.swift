@@ -111,6 +111,10 @@ public struct FeedService: Sendable {
             }
         }
 
+        // One "You're offline." is enough, however many interests hit it.
+        var seenMessages: Set<String> = []
+        errors = errors.filter { seenMessages.insert($0.message).inserted }
+
         let gotAnything = listsByScope.contains { lists in lists.contains { !$0.isEmpty } }
         var items = Self.dedupe(Self.interleave(listsByScope.map(Self.interleave)))
         items = items.filter {

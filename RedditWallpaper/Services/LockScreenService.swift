@@ -66,7 +66,6 @@ final class LockScreenService {
     func install(videoFile: URL, title: String) async throws {
         guard isAvailable else { throw LockScreenError.unavailable }
         guard !isSystemSettingsOpen else { throw LockScreenError.systemSettingsOpen }
-        _ = try readStore()
         try backUpIfNeeded()
 
         try fileManager.createDirectory(at: videosDirectory, withIntermediateDirectories: true)
@@ -83,26 +82,35 @@ final class LockScreenService {
         startMonitoring()
     }
 
-    /// Puts the screen saver back to what it was before the first install and
-    /// removes this app's video from the aerial list.
-    func restore() throws {
+    /// Undoes what this app changed: puts back the screen saver the user had
+    /// before the video (from the backup) and removes the video from the
+    /// aerial list. A screen saver this app didn't set is left alone.
+    /// Returns false when there was nothing to undo.
+    @discardableResult
+    func restore() throws -> Bool {
         stopMonitoring()
-        if fileManager.fileExists(atPath: storeURL.path) {
+        var changed = false
+        if fileManager.fileExists(atPath: storeURL.path), let ours = desiredConfiguration {
             let original = (try? readPropertyList(at: storeBackupURL)).flatMap(WallpaperStoreEditor.firstIdleChoice(in:))
             let store = try readStore()
-            let (updated, _) = WallpaperStoreEditor.settingIdle(
-                in: store,
-                provider: original?.provider ?? "com.apple.wallpaper.choice.macintosh",
-                configuration: original?.configuration ?? Data(),
-                now: Date())
-            try writePropertyList(updated, to: storeURL)
+            if let updated = WallpaperStoreEditor.restoringIdle(
+                in: store, from: (WallpaperStoreEditor.aerialsProvider, ours), to: original, now: Date()) {
+                try writePropertyList(updated, to: storeURL)
+                changed = true
+            }
         }
-        if let manifest = try readJSON(at: manifestURL) {
+        if let manifest = try readJSON(at: manifestURL),
+           (manifest["assets"] as? [[String: Any]] ?? []).contains(where: { $0["id"] as? String == AerialManifestEditor.assetID }) {
             try writeJSON(AerialManifestEditor.removingOurEntries(from: manifest), to: manifestURL)
+            changed = true
         }
-        try? fileManager.removeItem(at: movieURL)
+        if fileManager.fileExists(atPath: movieURL.path) {
+            try? fileManager.removeItem(at: movieURL)
+            changed = true
+        }
         try? fileManager.removeItem(at: previewURL)
-        restartWallpaperAgent()
+        if changed { restartWallpaperAgent() }
+        return changed
     }
 
     // MARK: - Keeping it applied
@@ -155,9 +163,18 @@ final class LockScreenService {
         try writePropertyList(updated, to: storeURL)
     }
 
+    /// Copies the store whenever its screen saver is the user's own (not this
+    /// app's video), so Restore brings back their latest choice, not one
+    /// from the first install.
     private func backUpIfNeeded() throws {
         try fileManager.createDirectory(at: backupDirectory, withIntermediateDirectories: true)
-        if !fileManager.fileExists(atPath: storeBackupURL.path) {
+        let store = try readStore()
+        let isOurs = desiredConfiguration.map {
+            WallpaperStoreEditor.idleContains(
+                in: store, provider: WallpaperStoreEditor.aerialsProvider, configuration: $0)
+        } ?? false
+        if !isOurs {
+            try? fileManager.removeItem(at: storeBackupURL)
             try fileManager.copyItem(at: storeURL, to: storeBackupURL)
         }
         if !fileManager.fileExists(atPath: manifestBackupURL.path), fileManager.fileExists(atPath: manifestURL.path) {

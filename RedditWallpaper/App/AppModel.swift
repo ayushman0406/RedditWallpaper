@@ -210,8 +210,10 @@ final class AppModel {
 
     func restoreLockScreen() {
         do {
-            try lockScreen.restore()
-            lockScreenMessage = "Restored the macOS lock screen and screen saver."
+            let changed = try lockScreen.restore()
+            lockScreenMessage = changed
+                ? "Restored your previous screen saver and removed the video from the aerial list."
+                : "Nothing to restore. This app hasn't changed your screen saver."
         } catch {
             lockScreenMessage = "Couldn't restore: \(error.localizedDescription)"
         }

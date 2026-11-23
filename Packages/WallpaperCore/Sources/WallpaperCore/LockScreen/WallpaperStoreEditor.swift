@@ -70,16 +70,26 @@ public enum WallpaperStoreEditor {
 
     /// True when at least one `Idle` project holds this choice.
     public static func idleContains(in store: [String: Any], provider: String, configuration: Data) -> Bool {
-        false
+        var found = false
+        walkIdle(in: store) { project in
+            let choice = firstChoice(of: project)
+            if choice?["Provider"] as? String == provider,
+               (choice?["Configuration"] as? Data ?? Data()) == configuration {
+                found = true
+            }
+        }
+        return found
     }
 
     /// Undoes this app's screen saver: every `Idle` goes back to `original`,
-    /// or to the macOS default when there is no backup.
+    /// or to the macOS default when there is no backup. Returns nil when no
+    /// `Idle` holds `ours`, so a screen saver the user chose is never touched.
     public static func restoringIdle(
         in store: [String: Any], from ours: (provider: String, configuration: Data),
         to original: (provider: String, configuration: Data)?, now: Date
     ) -> [String: Any]? {
-        settingIdle(
+        guard idleContains(in: store, provider: ours.provider, configuration: ours.configuration) else { return nil }
+        return settingIdle(
             in: store, provider: original?.provider ?? "com.apple.wallpaper.choice.macintosh",
             configuration: original?.configuration ?? Data(), now: now
         ).store
