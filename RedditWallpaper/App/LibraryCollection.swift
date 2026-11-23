@@ -1,6 +1,9 @@
 import Foundation
 import WallpaperCore
 
+/// Foundation also has a `SortOrder`; in this app it always means the feed's.
+typealias SortOrder = WallpaperCore.SortOrder
+
 /// A place in the Library sidebar (and the popover's chips).
 enum LibraryCollection: Hashable, Identifiable {
     case forYou

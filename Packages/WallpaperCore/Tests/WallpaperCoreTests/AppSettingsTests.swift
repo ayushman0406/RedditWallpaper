@@ -71,19 +71,25 @@ import Testing
         #expect(settings.selectedInterestIDs.isEmpty)
     }
 
+    // Mutating calls happen outside #expect/#require: the macros can't call
+    // mutating members.
     @Test func addCustomInterestSelectsAndDedupes() throws {
         var settings = AppSettings()
-        let added = try #require(settings.addCustomInterest(named: "Real Madrid"))
+        let first = settings.addCustomInterest(named: "Real Madrid")
+        let added = try #require(first)
         #expect(settings.isSelected(added))
-        #expect(settings.addCustomInterest(named: "real madrid")?.id == added.id)
+        let again = settings.addCustomInterest(named: "real madrid")
+        #expect(again?.id == added.id)
         #expect(settings.customInterests.count == 1)
         #expect(settings.selectedInterestIDs == [added.id])
-        #expect(settings.addCustomInterest(named: "  ") == nil)
+        let blank = settings.addCustomInterest(named: "  ")
+        #expect(blank == nil)
     }
 
     @Test func removeCustomInterestDeselects() throws {
         var settings = AppSettings()
-        let added = try #require(settings.addCustomInterest(named: "Porsche 911"))
+        let first = settings.addCustomInterest(named: "Porsche 911")
+        let added = try #require(first)
         settings.removeCustomInterest(id: added.id)
         #expect(settings.customInterests.isEmpty)
         #expect(settings.selectedInterestIDs.isEmpty)
