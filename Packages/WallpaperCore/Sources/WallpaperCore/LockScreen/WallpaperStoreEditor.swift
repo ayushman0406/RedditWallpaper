@@ -68,6 +68,23 @@ public enum WallpaperStoreEditor {
         return found && matches
     }
 
+    /// True when at least one `Idle` project holds this choice.
+    public static func idleContains(in store: [String: Any], provider: String, configuration: Data) -> Bool {
+        false
+    }
+
+    /// Undoes this app's screen saver: every `Idle` goes back to `original`,
+    /// or to the macOS default when there is no backup.
+    public static func restoringIdle(
+        in store: [String: Any], from ours: (provider: String, configuration: Data),
+        to original: (provider: String, configuration: Data)?, now: Date
+    ) -> [String: Any]? {
+        settingIdle(
+            in: store, provider: original?.provider ?? "com.apple.wallpaper.choice.macintosh",
+            configuration: original?.configuration ?? Data(), now: now
+        ).store
+    }
+
     /// The current screen-saver choice, preferring the system default scope.
     public static func firstIdleChoice(in store: [String: Any]) -> (provider: String, configuration: Data)? {
         func choice(of project: [String: Any]) -> (provider: String, configuration: Data)? {

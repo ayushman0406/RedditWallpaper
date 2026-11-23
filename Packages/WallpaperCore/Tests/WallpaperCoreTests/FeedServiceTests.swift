@@ -165,6 +165,17 @@ func wallpaper(
         #expect(!page.errors[0].message.isEmpty)
     }
 
+    // Regression: offline with several interests listed the same
+    // "You're offline." once per interest.
+    @Test func sameFailureAcrossInterestsIsReportedOnce() async {
+        let source = StubSource(id: .wallhaven, host: "a.test") { _ in [wallpaper("a")] }
+        let service = FeedService(sources: [source], client: MockHTTPClient(failingHosts: ["a.test"]))
+        let page = await service.load(FeedRequest(
+            scopes: [.interest(cars), .interest(surfing), .general], kind: .photo, sort: .top))
+        #expect(page.errors.count == 1)
+        #expect(page.errors.first?.source == .wallhaven)
+    }
+
     @Test func randomSortIsDeterministic() async {
         let source = StubSource(id: .wallhaven, host: "a.test") { _ in (1...12).map { wallpaper("w\($0)") } }
         let service = FeedService(sources: [source], client: MockHTTPClient())

@@ -104,4 +104,38 @@ import Testing
         let plist = try PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: Any]
         #expect(plist?["assetID"] as? String == "5F0A")
     }
+
+    @Test func idleContainsFindsOneMatchingProject() {
+        #expect(WallpaperStoreEditor.idleContains(in: sampleStore(), provider: provider, configuration: Data([9])))
+        #expect(!WallpaperStoreEditor.idleContains(in: sampleStore(), provider: provider, configuration: Data([8])))
+        #expect(!WallpaperStoreEditor.idleContains(in: [:], provider: provider, configuration: Data([9])))
+    }
+
+    // Regression: Restore with nothing installed reset the user's own screen
+    // saver to the macOS default.
+    @Test func restoringIdleLeavesAStoreWithoutOurChoiceAlone() {
+        let restored = WallpaperStoreEditor.restoringIdle(
+            in: sampleStore(), from: (provider, Data([42])), to: nil, now: Date())
+        #expect(restored == nil)
+    }
+
+    @Test func restoringIdlePutsTheOriginalChoiceBackEverywhere() throws {
+        let original = (provider: "com.apple.wallpaper.choice.macintosh", configuration: Data([5]))
+        let restored = try #require(WallpaperStoreEditor.restoringIdle(
+            in: sampleStore(), from: (provider, Data([9])), to: original, now: Date(timeIntervalSince1970: 100)))
+        let idles = idleProjects(restored)
+        #expect(idles.count == 3)
+        for idle in idles {
+            let choice = try #require(((idle["Content"] as? [String: Any])?["Choices"] as? [[String: Any]])?.first)
+            #expect(choice["Provider"] as? String == original.provider)
+            #expect(choice["Configuration"] as? Data == original.configuration)
+        }
+    }
+
+    @Test func restoringIdleWithoutBackupUsesTheMacOSDefault() throws {
+        let restored = try #require(WallpaperStoreEditor.restoringIdle(
+            in: sampleStore(), from: (provider, Data([9])), to: nil, now: Date()))
+        let first = try #require(WallpaperStoreEditor.firstIdleChoice(in: restored))
+        #expect(first.provider == "com.apple.wallpaper.choice.macintosh")
+    }
 }
