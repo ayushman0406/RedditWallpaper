@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    name: build-and-test
+    runs-on: macos-26
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: Test WallpaperCore
+        run: |
+          set +e
+          swift test --package-path Packages/WallpaperCore > core-tests.log 2>&1
+          status=$?
+          echo "::group::Failures and errors"
+          grep -nE "error:|✘|failed|Fatal" core-tests.log | head -200
+          echo "::endgroup::"
+          tail -n 60 core-tests.log
+          exit $status
+
+      # Runs even when the tests fail, so one run reports both results.
+      - name: Build app
+        if: success() || failure()
+        run: |
+          set +e
+          xcodebuild -project RedditWallpaper.xcodeproj \
+            -scheme RedditWallpaper \
+            -configuration Debug \
+            -destination 'platform=macOS' \
+            CODE_SIGNING_ALLOWED=NO \
+            build > build.log 2>&1
+          status=$?
+          echo "::group::Errors and warnings"
+          grep -E "(error|warning): " build.log | sort -u | head -200
+          echo "::endgroup::"
+          tail -n 30 build.log
+          exit $status
